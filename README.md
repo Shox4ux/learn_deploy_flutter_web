@@ -58,6 +58,13 @@ Web fayllarni joylashtirish uchun `/var/www` ichida yangi papka yaratamiz.
 ```bash
 sudo mkdir -p /var/www/flutter_web
 ```
+Agar build fayllar serverda `/root/flutter_web` ichida bo‘lsa, ularni `/var/www/flutter_web` papkasiga ko‘chiramiz.
+
+```bash
+sudo cp -r /root/flutter_web/* /var/www/flutter_web/
+```
+
+---
 
 Papka ruxsatlarini o‘zgartiramiz:
 
@@ -67,33 +74,7 @@ sudo chown -R $USER:$USER /var/www/flutter_web
 
 ---
 
-# 4. Flutter Web build qilish (lokal kompyuterda)
-
-Flutter loyihangiz ichida quyidagi buyruqni ishga tushiring:
-
-```bash
-flutter build web
-```
-
-Natijada quyidagi papka hosil bo‘ladi:
-
-```
-build/web
-```
-
----
-
-# 5. Build fayllarni serverga ko‘chirish
-
-Agar build fayllar serverda `/root/flutter_web` ichida bo‘lsa, ularni `/var/www/flutter_web` papkasiga ko‘chiramiz.
-
-```bash
-sudo cp -r /root/flutter_web/* /var/www/flutter_web/
-```
-
----
-
-# 6. Nginx konfiguratsiya fayli yaratish
+# 4. Nginx konfiguratsiya fayli yaratish
 
 Nginx uchun yangi konfiguratsiya fayli yaratamiz.
 
@@ -119,7 +100,7 @@ server {
 
 ---
 
-# 7. Nginx konfiguratsiyani yoqish
+# 5. Nginx konfiguratsiyani yoqish
 
 Yaratilgan konfiguratsiyani `sites-enabled` papkaga ulaymiz.
 
@@ -135,7 +116,7 @@ sudo rm /etc/nginx/sites-enabled/default
 
 ---
 
-# 8. Nginx konfiguratsiyasini tekshirish
+# 6. Nginx konfiguratsiyasini tekshirish
 
 ```bash
 sudo nginx -t
@@ -150,7 +131,7 @@ test is successful
 
 ---
 
-# 9. Nginx ni qayta ishga tushirish
+# 7. Nginx ni qayta ishga tushirish
 
 ```bash
 sudo systemctl restart nginx
@@ -158,23 +139,15 @@ sudo systemctl restart nginx
 
 ---
 
-# 10. Natijani tekshirish
+# 8. Natijani tekshirish
 
 Endi server IP manzilini brauzerda oching:
 
 ```
-http://SERVER_IP
+http://SERVER_IP:PORT
 ```
 
 Agar hammasi to‘g‘ri bajarilgan bo‘lsa, **Flutter Web ilovangiz ochiladi.**
 
 ---
 
-# Xulosa
-
-Biz quyidagi ishlarni bajardik:
-
-- Nginx o‘rnatdik
-- Web ilova uchun papka yaratdik
-- Flutter Web build fayllarni serverga ko‘chirdik
-- Nginx orqali web ilovani ishga tushirdik
