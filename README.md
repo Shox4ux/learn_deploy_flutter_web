@@ -1,144 +1,31 @@
-# learn_deploy_flutter_web
+# Flutter Web ni Serverga Deploy Qilish (Nginx orqali)
 
-# Yangi Ubuntu Serverni Tayyorlash (Git + Docker + Nginx)
+Ushbu qo‘llanmada biz **Flutter Web build fayllarini serverga joylashtirib, Nginx orqali internetga chiqarishni** o‘rganamiz.
 
-Ushbu qo‘llanma yangi Ubuntu serverni **deployment uchun tayyorlash**ni ko‘rsatadi.  
-Natijada serverda quyidagilar o‘rnatiladi:
+Bu bosqichda bizga faqat:
 
-- Git
-- Docker
-- Docker Compose
+- Ubuntu server
 - Nginx
+- Flutter Web build fayllari
+
+kerak bo‘ladi.
 
 ---
 
 # 1. Serverni yangilash
 
-Serverdagi paketlar ro‘yxatini yangilaymiz va barcha paketlarni upgrade qilamiz.
+Serverga ulanganingizdan keyin avval paketlarni yangilaymiz.
 
 ```bash
 sudo apt update
 sudo apt upgrade -y
 ```
 
-Keraksiz paketlarni tozalash:
-
-```bash
-sudo apt autoremove -y
-```
-
 ---
 
-# 2. Git o‘rnatish
+# 2. Nginx o‘rnatish
 
-Git kodlarni repositorydan yuklab olish uchun kerak bo‘ladi.
-
-```bash
-sudo apt install git -y
-```
-
-Git o‘rnatilganini tekshirish:
-
-```bash
-git --version
-```
-
----
-
-# 3. Docker uchun kerakli paketlarni o‘rnatish
-
-```bash
-sudo apt install \
-ca-certificates \
-curl \
-gnupg \
-lsb-release -y
-```
-
----
-
-# 4. Docker GPG kalitini qo‘shish
-
-```bash
-sudo mkdir -p /etc/apt/keyrings
-```
-
-```bash
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-```
-
----
-
-# 5. Docker repository qo‘shish
-
-```bash
-echo \
-"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-https://download.docker.com/linux/ubuntu \
-$(lsb_release -cs) stable" | \
-sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-```
-
----
-
-# 6. Paketlar ro‘yxatini yana yangilash
-
-```bash
-sudo apt update
-```
-
----
-
-# 7. Docker o‘rnatish
-
-```bash
-sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-```
-
-Docker versiyasini tekshirish:
-
-```bash
-docker --version
-```
-
----
-
-# 8. Docker ni sudo siz ishlatish
-
-Userni docker guruhiga qo‘shamiz:
-
-```bash
-sudo usermod -aG docker $USER
-```
-
-O‘zgarishni qo‘llash:
-
-```bash
-newgrp docker
-```
-
-Docker ishlayotganini tekshirish:
-
-```bash
-docker run hello-world
-```
-
----
-
-# 9. Docker Compose tekshirish
-
-Ko‘pchilik yangi Docker versiyalarida Compose ichida bo‘ladi.
-
-```bash
-docker compose version
-```
-
----
-
-# 10. Nginx o‘rnatish
-
-Nginx — bu web server bo‘lib, Flutter Web buildni foydalanuvchilarga uzatish uchun ishlatiladi.
+Nginx — bu web server bo‘lib, u foydalanuvchilarga web sahifalarni uzatadi.
 
 ```bash
 sudo apt install nginx -y
@@ -156,7 +43,7 @@ Agar ishlamayotgan bo‘lsa:
 sudo systemctl start nginx
 ```
 
-Server yuklanganda avtomatik ishga tushishi uchun:
+Server qayta ishga tushganda ham avtomatik ishlashi uchun:
 
 ```bash
 sudo systemctl enable nginx
@@ -164,52 +51,130 @@ sudo systemctl enable nginx
 
 ---
 
-# 11. Nginx firewall ruxsatlari (agar UFW ishlatilsa)
+# 3. Web ilova uchun papka yaratish
+
+Web fayllarni joylashtirish uchun `/var/www` ichida yangi papka yaratamiz.
 
 ```bash
-sudo ufw allow 'Nginx Full'
+sudo mkdir -p /var/www/flutter_web
 ```
 
-Firewall statusini tekshirish:
+Papka ruxsatlarini o‘zgartiramiz:
 
 ```bash
-sudo ufw status
-```
-
----
-
-# 12. Foydali Docker buyruqlari
-
-Ishlayotgan containerlarni ko‘rish:
-
-```bash
-docker ps
-```
-
-Barcha containerlarni ko‘rish:
-
-```bash
-docker ps -a
-```
-
-Containerni to‘xtatish:
-
-```bash
-docker stop CONTAINER_ID
-```
-
-Containerni o‘chirish:
-
-```bash
-docker rm CONTAINER_ID
+sudo chown -R $USER:$USER /var/www/flutter_web
 ```
 
 ---
 
-# Server tayyor
+# 4. Flutter Web build qilish (lokal kompyuterda)
 
-Endi siz serverda quyidagilarni qila olasiz:
+Flutter loyihangiz ichida quyidagi buyruqni ishga tushiring:
 
-- Git orqali loyihalarni yuklab olish
-- Docker orqali backend xizmatlarini ishga tushirish
-- Nginx orqali Flutter Web ilovasini deploy qilish
+```bash
+flutter build web
+```
+
+Natijada quyidagi papka hosil bo‘ladi:
+
+```
+build/web
+```
+
+---
+
+# 5. Build fayllarni serverga ko‘chirish
+
+Agar build fayllar serverda `/root/flutter_web` ichida bo‘lsa, ularni `/var/www/flutter_web` papkasiga ko‘chiramiz.
+
+```bash
+sudo cp -r /root/flutter_web/* /var/www/flutter_web/
+```
+
+---
+
+# 6. Nginx konfiguratsiya fayli yaratish
+
+Nginx uchun yangi konfiguratsiya fayli yaratamiz.
+
+```bash
+sudo nano /etc/nginx/sites-available/flutter_web
+```
+
+Ichiga quyidagi konfiguratsiyani yozing:
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    root /var/www/flutter_web;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+---
+
+# 7. Nginx konfiguratsiyani yoqish
+
+Yaratilgan konfiguratsiyani `sites-enabled` papkaga ulaymiz.
+
+```bash
+sudo ln -s /etc/nginx/sites-available/flutter_web /etc/nginx/sites-enabled/
+```
+
+Standart konfiguratsiyani o‘chirish (ixtiyoriy):
+
+```bash
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+---
+
+# 8. Nginx konfiguratsiyasini tekshirish
+
+```bash
+sudo nginx -t
+```
+
+Agar hammasi to‘g‘ri bo‘lsa quyidagiga o‘xshash natija chiqadi:
+
+```
+syntax is ok
+test is successful
+```
+
+---
+
+# 9. Nginx ni qayta ishga tushirish
+
+```bash
+sudo systemctl restart nginx
+```
+
+---
+
+# 10. Natijani tekshirish
+
+Endi server IP manzilini brauzerda oching:
+
+```
+http://SERVER_IP
+```
+
+Agar hammasi to‘g‘ri bajarilgan bo‘lsa, **Flutter Web ilovangiz ochiladi.**
+
+---
+
+# Xulosa
+
+Biz quyidagi ishlarni bajardik:
+
+- Nginx o‘rnatdik
+- Web ilova uchun papka yaratdik
+- Flutter Web build fayllarni serverga ko‘chirdik
+- Nginx orqali web ilovani ishga tushirdik
