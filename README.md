@@ -6,8 +6,6 @@ Bu bosqichda bizga faqat:
 
 - Ubuntu server
 - Nginx
-- Flutter Web build fayllari
-
 kerak bo‘ladi.
 
 ---
